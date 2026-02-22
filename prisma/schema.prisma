@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PARTICIPANT
+  ORGANIZER
+  ADMIN
+}
+
+enum EventStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum ParticipantStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         Role     @default(PARTICIPANT)
+  avatarUrl    String?  @map("avatar_url")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  cars            Car[]
+  organizedEvents Event[]
+  participations  EventParticipant[]
+  messages        ChatMessage[]
+  moderations     ModerationLog[]
+
+  @@map("users")
+}
+
+model Car {
+  id       String  @id @default(uuid())
+  ownerId  String  @map("owner_id")
+  brand    String
+  model    String
+  year     Int
+  photoUrl String? @map("photo_url")
+
+  owner          User              @relation(fields: [ownerId], references: [id])
+  participations EventParticipant[]
+
+  @@map("cars")
+}
+
+model Event {
+  id          String      @id @default(uuid())
+  organizerId String      @map("organizer_id")
+  title       String
+  description String?
+  location    String
+  date        DateTime
+  maxSlots    Int         @map("max_slots")
+  status      EventStatus @default(PENDING)
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  organizer      User              @relation(fields: [organizerId], references: [id])
+  participants   EventParticipant[]
+  messages       ChatMessage[]
+  moderationLogs ModerationLog[]
+
+  @@map("events")
+}
+
+model EventParticipant {
+  id       String            @id @default(uuid())
+  eventId  String            @map("event_id")
+  userId   String            @map("user_id")
+  carId    String            @map("car_id")
+  status   ParticipantStatus @default(PENDING)
+  joinedAt DateTime          @default(now()) @map("joined_at")
+
+  event Event @relation(fields: [eventId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+  car   Car   @relation(fields: [carId], references: [id])
+
+  @@unique([eventId, userId])
+  @@map("event_participants")
+}
+
+model ChatMessage {
+  id      String   @id @default(uuid())
+  eventId String   @map("event_id")
+  userId  String   @map("user_id")
+  content String
+  sentAt  DateTime @default(now()) @map("sent_at")
+
+  event Event @relation(fields: [eventId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@map("chat_messages")
+}
+
+model ModerationLog {
+  id         String   @id @default(uuid())
+  eventId    String   @map("event_id")
+  reviewedBy String   @map("reviewed_by")
+  decision   String
+  reason     String?
+  reviewedAt DateTime @default(now()) @map("reviewed_at")
+
+  event    Event @relation(fields: [eventId], references: [id])
+  reviewer User  @relation(fields: [reviewedBy], references: [id])
+
+  @@map("moderation_log")
+}
