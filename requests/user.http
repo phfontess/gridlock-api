@@ -1,0 +1,17 @@
+@baseUrl = http://localhost:3000
+@contentType = application/json
+
+### Login (run this first to get a token)
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### Get users
+GET {{baseUrl}}/users
+Content-Type: {{contentType}}
+Authorization: Bearer {{login.response.body.accessToken}}
