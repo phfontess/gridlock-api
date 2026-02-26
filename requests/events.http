@@ -1,0 +1,109 @@
+@baseUrl = http://localhost:3000
+@contentType = application/json
+
+### 1. Login as organizer (run first to get token)
+# @name loginOrganizer
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "organizer@example.com",
+  "password": "password123"
+}
+
+### 2. Login as participant
+# @name loginParticipant
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### 3. Create event (ORGANIZER only) → 201
+# @name createEvent
+POST {{baseUrl}}/events
+Content-Type: {{contentType}}
+Authorization: Bearer {{loginOrganizer.response.body.accessToken}}
+
+{
+  "title": "Encontro Paganini",
+  "description": "Encontro sextou!",
+  "location": "Postim Raja",
+  "date": "2026-02-27T10:00:00.000Z",
+  "maxSlots": 50
+}
+
+### 4. Create event as participant → 403 Forbidden
+POST {{baseUrl}}/events
+Content-Type: {{contentType}}
+Authorization: Bearer {{loginParticipant.response.body.accessToken}}
+
+{
+  "title": "Should fail",
+  "location": "Nowhere",
+  "date": "2026-12-20T10:00:00.000Z",
+  "maxSlots": 10
+}
+
+### 5. List events → 200 paginated
+GET {{baseUrl}}/events
+Authorization: Bearer {{loginParticipant.response.body.accessToken}}
+
+### 6. List events with pagination params
+GET {{baseUrl}}/events?page=1&limit=5
+Authorization: Bearer {{loginOrganizer.response.body.accessToken}}
+
+### 7. Get event by ID → 200
+# Replace <event-id> with the id from the createEvent response
+GET {{baseUrl}}/events/b1a48387-488c-4d83-a8a9-3de028c392fc
+Authorization: Bearer {{loginOrganizer.response.body.accessToken}}
+
+### 8. Get event by ID — dynamic (uses createEvent response)
+GET {{baseUrl}}/events/{{createEvent.response.body.id}}
+Authorization: Bearer {{loginOrganizer.response.body.accessToken}}
+
+### 9. Update event → 200
+PUT {{baseUrl}}/events/{{createEvent.response.body.id}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{loginOrganizer.response.body.accessToken}}
+
+{
+  "title": "Encontro de Clássicos SP — Edição Especial",
+  "maxSlots": 80
+}
+
+### 10. Join event as participant (requires carId) → 201
+POST {{baseUrl}}/events/{{createEvent.response.body.id}}/join
+Content-Type: {{contentType}}
+Authorization: Bearer {{loginParticipant.response.body.accessToken}}
+
+{
+  "carId": "<paste-car-id-here>"
+}
+
+### 11. Join event again → 409 already registered
+POST {{baseUrl}}/events/{{createEvent.response.body.id}}/join
+Content-Type: {{contentType}}
+Authorization: Bearer {{loginParticipant.response.body.accessToken}}
+
+{
+  "carId": "<paste-car-id-here>"
+}
+
+### 12. List participants → 200 paginated
+GET {{baseUrl}}/events/{{createEvent.response.body.id}}/participants
+Authorization: Bearer {{loginOrganizer.response.body.accessToken}}
+
+### 13. Cancel (delete) event → 200 with status CANCELLED
+DELETE {{baseUrl}}/events/{{createEvent.response.body.id}}
+Authorization: Bearer {{loginOrganizer.response.body.accessToken}}
+
+### 14. Cancel already-cancelled event → 422
+DELETE {{baseUrl}}/events/{{createEvent.response.body.id}}
+Authorization: Bearer {{loginOrganizer.response.body.accessToken}}
+
+### 15. Get non-existent event → 404
+GET {{baseUrl}}/events/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{loginParticipant.response.body.accessToken}}
