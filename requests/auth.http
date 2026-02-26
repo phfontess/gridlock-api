@@ -1,0 +1,42 @@
+@baseUrl = http://localhost:3000
+@contentType = application/json
+
+### Register — participant (default role)
+POST {{baseUrl}}/auth/register
+Content-Type: {{contentType}}
+
+{
+  "name": "Test User",
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### Register — organizer
+POST {{baseUrl}}/auth/register
+Content-Type: {{contentType}}
+
+{
+  "name": "Event Organizer",
+  "email": "organizer@example.com",
+  "password": "password123",
+  "role": "ORGANIZER"
+}
+
+### Login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### Refresh token
+# Copy accessToken / refreshToken from the login response above
+POST {{baseUrl}}/auth/refresh
+Content-Type: {{contentType}}
+
+{
+  "refreshToken": "<paste-refresh-token-here>"
+}
